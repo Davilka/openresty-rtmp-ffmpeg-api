@@ -6,5 +6,5 @@
 #   set hls_cleanup to off in nginx.conf
 # To keep the directory clean use this script which will be called every 2 minutes
 # and delete every content of hls directory.
-echo "cleaning hls directory..!"
-rm -r  $HLS_DIR/*
+#echo "cleaning hls directory..!"
+#rm -r  $HLS_DIR/*
