@@ -191,7 +191,7 @@ RUN cd /tmp/openresty-${RESTY_VERSION} \
     && make -j${RESTY_J} \
     && make -j${RESTY_J} install \
     && cd /tmp 
-RUN cd luarocks-${RESTY_LUAROCKS_VERSION} \
+RUN cd /tmp/luarocks-${RESTY_LUAROCKS_VERSION} \
     && ./configure \
         --prefix=/usr/local/openresty/luajit \
         --with-lua=/usr/local/openresty/luajit \
