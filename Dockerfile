@@ -82,7 +82,7 @@ ARG NGINX_RTMP_VERSION="1.2.2"
 ARG RESTY_VERSION="1.21.4.2"
 ARG RESTY_OPENSSL_VERSION="1.0.2p"
 ARG RESTY_PCRE_VERSION="8.42"
-ARG RESTY_LUAROCKS_VERSION="3.0.0"
+ARG RESTY_LUAROCKS_VERSION="3.9.2"
 ARG RESTY_CONFIG_OPTIONS_MORE=""
 ARG RESTY_J="1"
 ARG RESTY_CONFIG_OPTIONS="\
@@ -121,28 +121,26 @@ ARG _RESTY_CONFIG_DEPS="--with-openssl=/tmp/openssl-${RESTY_OPENSSL_VERSION} --a
 ARG FFMPEG_VERSION="6.0"
 ARG FFMPEG_CONFIG_OPTIONS="\
     --disable-debug \
-    --disable-doc \ 
-    --disable-ffplay \ 
-    --enable-avresample \ 
+    --disable-doc \
+    --disable-ffplay \
     --enable-gnutls \
-    --enable-gpl \ 
-    --enable-libass \ 
-    --enable-libfreetype \ 
-    --enable-libmp3lame \ 
-    --enable-libopus \ 
-    --enable-librtmp \ 
+    --enable-gpl \
+    --enable-libass \
+    --enable-libfreetype \
+    --enable-libmp3lame \
+    --enable-libopus \
+    --enable-librtmp \
     --enable-libtheora \
-    --enable-libfdk-aac \ 
-    --enable-libvorbis \ 
-    --enable-libvpx \ 
-    --enable-libwebp \ 
-    --enable-libx264 \ 
-    --enable-libx265 \ 
-    --enable-nonfree \ 
-    --enable-postproc \ 
-    --enable-small \ 
+    --enable-libfdk-aac \
+    --enable-libvorbis \
+    --enable-libvpx \
+    --enable-libwebp \
+    --enable-libx264 \
+    --enable-libx265 \
+    --enable-nonfree \
+    --enable-postproc \
+    --enable-small \
     --enable-version3 \
-    --enable-openssl \
     --enable-avfilter \
     --enable-libxvid \
     --enable-libv4l2 \
@@ -151,9 +149,9 @@ ARG FFMPEG_CONFIG_OPTIONS="\
     --enable-vaapi \
     --enable-pthreads \
     --disable-stripping \
-    --disable-static \    
+    --disable-static \
     "
-
+    
 LABEL org.label-schema.schema-version="1.0"
 LABEL org.label-schema.build-date=${BUILD_DATE}
 LABEL org.label-schema.name="openresty-rtmp-ffmpeg-api"
@@ -167,58 +165,17 @@ LABEL org.label-schema.description="nginx-rtmp for streaming, including ffmpeg a
 # 4) Build LuaRocks
 # 5) Build ffmpeg
 # 6) Cleanup
-RUN apk add --no-cache --virtual .build-deps \
-        build-base \
-        curl \
-        gd-dev \
-        geoip-dev \
-        libxslt-dev \
-        linux-headers \
-        make \
-        perl-dev \
-        readline-dev \
-        zlib-dev \
-	bzip2 \ 
-	coreutils \ 
-	gnutls \ 
-	nasm \ 
-	tar \ 
-	x264 \
-	curl \
-    && apk add --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/ --allow-untrusted \
-        fdk-aac-dev \
-    && apk add --no-cache \
-        gd \
-        geoip \
-        libgcc \
-        supervisor \
-        perl \
-        libxslt \
-        zlib \
-        bash \
-        freetype-dev \
-        gnutls-dev \
-        lame-dev \
-        libass-dev \
-        libogg-dev \
-        libtheora-dev \
-        libvorbis-dev \ 
-        libvpx-dev \
-        libwebp-dev \ 
-        libssh2 \
-        opus-dev \
-        rtmpdump-dev \
-        x264-dev \
-        x265-dev \
-	    yasm-dev \
+RUN apk add --no-cache --virtual .build-deps build-base curl gd-dev geoip-dev libxslt-dev linux-headers make perl-dev readline-dev zlib-dev bzip2 coreutils gnutls nasm tar x264 curl \
+    && apk add --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/ --allow-untrusted fdk-aac-dev \
+    && apk add --no-cache gd geoip libgcc supervisor perl libxslt zlib bash freetype-dev gnutls-dev lame-dev libass-dev libogg-dev libtheora-dev libvorbis-dev libvpx-dev libwebp-dev libssh2 opus-dev rtmpdump-dev x264-dev x265-dev yasm-dev v4l-utils-dev xvidcore-dev gst-vaapi libva-dev gettext-dev \
     && cd /tmp \
     && curl -fSL https://www.openssl.org/source/openssl-${RESTY_OPENSSL_VERSION}.tar.gz -o openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
     && tar xzf openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
-    && curl -fSL https://github.com/luarocks/luarocks/archive/${RESTY_LUAROCKS_VERSION}.tar.gz -o luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
+    && curl -fSL https://luarocks.org/releases/luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz -o luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
     && tar xzf luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
     && curl -fSL https://github.com/arut/nginx-rtmp-module/archive/v$NGINX_RTMP_VERSION.tar.gz -o nginx-rtmp-module.tar.gz \
     && tar xzf nginx-rtmp-module.tar.gz \
-    && curl -fSL https://ftp.pcre.org/pub/pcre/pcre-${RESTY_PCRE_VERSION}.tar.gz -o pcre-${RESTY_PCRE_VERSION}.tar.gz \
+    && curl -fSL curl -fSL https://sourceforge.net/projects/pcre/files/pcre/${RESTY_PCRE_VERSION}/pcre-${RESTY_PCRE_VERSION}.tar.gz -o pcre-${RESTY_PCRE_VERSION}.tar.gz \
     && tar xzf pcre-${RESTY_PCRE_VERSION}.tar.gz \
     && curl -sL https://www.ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.gz -o ffmpeg.tar.gz \
     && tar xzf ffmpeg.tar.gz \
