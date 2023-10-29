@@ -38,6 +38,16 @@ RUN apk add --no-cache git
 
 # add files
 ADD api/ .
+
+# Get go modules
+RUN \ 
+  go get github.com/gin-contrib/sse \
+  && go get github.com/golang/protobuf/proto \
+  && go get github.com/ugorji/go/codec \
+  && go get gopkg.in/go-playground/validator.v8 \
+  && go get gopkg.in/yaml.v2 \
+  && go get github.com/mattn/go-isatty
+
 # compile app static
 RUN \
   CGO_ENABLED=0 \
