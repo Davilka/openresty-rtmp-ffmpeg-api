@@ -165,10 +165,10 @@ LABEL org.label-schema.description="nginx-rtmp for streaming, including ffmpeg a
 # 4) Build LuaRocks
 # 5) Build ffmpeg
 # 6) Cleanup
-RUN apk add --no-cache --virtual .build-deps build-base curl gd-dev geoip-dev libxslt-dev linux-headers make perl-dev readline-dev zlib-dev bzip2 coreutils gnutls nasm tar x264 \
-    && apk add --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/ --allow-untrusted fdk-aac-dev \
-    && apk add --no-cache gd geoip libgcc supervisor perl libxslt zlib bash freetype-dev gnutls-dev lame-dev libass-dev libogg-dev libtheora-dev libvorbis-dev libvpx-dev libwebp-dev libssh2 opus-dev rtmpdump-dev x264-dev x265-dev yasm-dev v4l-utils-dev xvidcore-dev gst-vaapi libva-dev gettext-dev \
-    && cd /tmp \
+RUN apk add --no-cache --virtual .build-deps build-base curl gd-dev geoip-dev libxslt-dev linux-headers make perl-dev readline-dev zlib-dev bzip2 coreutils gnutls nasm tar x264 
+RUN apk add --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/ --allow-untrusted fdk-aac-dev 
+RUN apk add --no-cache gd geoip libgcc supervisor perl libxslt zlib bash freetype-dev gnutls-dev lame-dev libass-dev libogg-dev libtheora-dev libvorbis-dev libvpx-dev libwebp-dev libssh2 opus-dev rtmpdump-dev x264-dev x265-dev yasm-dev v4l-utils-dev xvidcore-dev gst-vaapi libva-dev gettext-dev 
+RUN cd /tmp 
     && curl -fSL https://www.openssl.org/source/openssl-${RESTY_OPENSSL_VERSION}.tar.gz -o openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
     && tar xzf openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
     && curl -fSL https://luarocks.org/releases/luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz -o luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
@@ -180,13 +180,13 @@ RUN apk add --no-cache --virtual .build-deps build-base curl gd-dev geoip-dev li
     && curl -sL https://www.ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.gz -o ffmpeg.tar.gz \
     && tar xzf ffmpeg.tar.gz \
     && curl -fSL https://openresty.org/download/openresty-${RESTY_VERSION}.tar.gz -o openresty-${RESTY_VERSION}.tar.gz \
-    && tar xzf openresty-${RESTY_VERSION}.tar.gz \
-    && cd /tmp/openresty-${RESTY_VERSION} \
+    && tar xzf openresty-${RESTY_VERSION}.tar.gz 
+RUN cd /tmp/openresty-${RESTY_VERSION} \
     && ./configure -j${RESTY_J} ${_RESTY_CONFIG_DEPS} ${RESTY_CONFIG_OPTIONS} ${RESTY_CONFIG_OPTIONS_MORE} \
     && make -j${RESTY_J} \
     && make -j${RESTY_J} install \
-    && cd /tmp \
-    && cd luarocks-${RESTY_LUAROCKS_VERSION} \
+    && cd /tmp 
+RUN cd luarocks-${RESTY_LUAROCKS_VERSION} \
     && ./configure \
         --prefix=/usr/local/openresty/luajit \
         --with-lua=/usr/local/openresty/luajit \
@@ -194,13 +194,13 @@ RUN apk add --no-cache --virtual .build-deps build-base curl gd-dev geoip-dev li
         --with-lua-include=/usr/local/openresty/luajit/include/luajit-2.1 \
     && make build \
     && make install \
-    && cd /tmp/ffmpeg* \
-    && PATH="/usr/bin:$PATH" \
+    && cd /tmp/ffmpeg* 
+RUN PATH="/usr/bin:$PATH" \
 	  && ./configure --bindir="/usr/bin" ${FFMPEG_CONFIG_OPTIONS} \
 	  && make -j$(getconf _NPROCESSORS_ONLN) \
 	  && make install \
-	  && make distclean \
-    && cd /tmp \
+	  && make distclean 
+RUN cd /tmp \
     && rm -rf \
         openssl-${RESTY_OPENSSL_VERSION} \
         openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
@@ -209,17 +209,17 @@ RUN apk add --no-cache --virtual .build-deps build-base curl gd-dev geoip-dev li
         nginx-rtmp-module.tar.gz \
         ffmpeg-${FFMPEG_VERSION} ffmpeg.tar.gz \
         openresty-${RESTY_VERSION}.tar.gz openresty-${RESTY_VERSION} \
-        pcre-${RESTY_PCRE_VERSION}.tar.gz pcre-${RESTY_PCRE_VERSION} \
-    && apk add --no-cache --virtual .gettext gettext \
-    && mv /usr/bin/envsubst /tmp/ \
+        pcre-${RESTY_PCRE_VERSION}.tar.gz pcre-${RESTY_PCRE_VERSION} 
+RUN apk add --no-cache --virtual .gettext gettext 
+RUN mv /usr/bin/envsubst /tmp/ \
     && runDeps="$( \
         scanelf --needed --nobanner /tmp/envsubst \
             | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
             | sort -u \
             | xargs -r apk info --installed \
             | sort -u \
-    )" \
-    && apk del .build-deps .gettext \
+    )" 
+RUN apk del .build-deps .gettext \
     && mv /tmp/envsubst /usr/local/bin \
     && ln -sf /dev/stdout /usr/local/openresty/nginx/logs/access.log \
     && ln -sf /dev/stderr /usr/local/openresty/nginx/logs/error.log 
