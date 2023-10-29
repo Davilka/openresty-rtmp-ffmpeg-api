@@ -27,7 +27,7 @@
 ################
 
 # Builder image
-FROM golang:1.11.2-alpine3.8 as builder
+FROM golang:1.21.3-alpine3.18 as builder
 WORKDIR /work
 
 # enable gin gonic relase mode
