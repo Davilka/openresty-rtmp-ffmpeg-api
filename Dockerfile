@@ -71,9 +71,6 @@ RUN mkdir -p /data/dash
 # Prepare www directory
 RUN mkdir -p /www
 
-# Add static files
-ADD static /www/static
-
 # Add additional binaries into PATH for convenience
 ENV PATH=$PATH:/usr/local/openresty/luajit/bin:/usr/local/openresty/nginx/sbin:/usr/local/openresty/bin
 
