@@ -219,7 +219,6 @@ RUN apk add --no-cache --virtual .build-deps build-base curl gd-dev geoip-dev li
             | xargs -r apk info --installed \
             | sort -u \
     )" \
-    && apk add --no-cache --virtual $runDeps \
     && apk del .build-deps .gettext \
     && mv /tmp/envsubst /usr/local/bin \
     && ln -sf /dev/stdout /usr/local/openresty/nginx/logs/access.log \
