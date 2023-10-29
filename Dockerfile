@@ -168,7 +168,7 @@ LABEL org.label-schema.description="nginx-rtmp for streaming, including ffmpeg a
 RUN apk add --no-cache --virtual .build-deps build-base curl gd-dev geoip-dev libxslt-dev linux-headers make perl-dev readline-dev zlib-dev bzip2 coreutils gnutls nasm tar x264 
 RUN apk add --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/ --allow-untrusted fdk-aac-dev 
 RUN apk add --no-cache gd geoip libgcc supervisor perl libxslt zlib bash freetype-dev gnutls-dev lame-dev libass-dev libogg-dev libtheora-dev libvorbis-dev libvpx-dev libwebp-dev libssh2 opus-dev rtmpdump-dev x264-dev x265-dev yasm-dev v4l-utils-dev xvidcore-dev gst-vaapi libva-dev gettext-dev 
-RUN cd /tmp 
+RUN cd /tmp \
     && curl -fSL https://www.openssl.org/source/openssl-${RESTY_OPENSSL_VERSION}.tar.gz -o openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
     && tar xzf openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
     && curl -fSL https://luarocks.org/releases/luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz -o luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
