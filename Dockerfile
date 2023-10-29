@@ -121,8 +121,8 @@ ARG _RESTY_CONFIG_DEPS="--with-openssl=/tmp/openssl-${RESTY_OPENSSL_VERSION} --a
 ARG FFMPEG_VERSION="6.0"
 ARG FFMPEG_CONFIG_OPTIONS="\
     --disable-debug \
-	--disable-doc \ 
-	--disable-ffplay \ 
+    --disable-doc \ 
+    --disable-ffplay \ 
     --enable-avresample \ 
     --enable-gnutls \
     --enable-gpl \ 
@@ -178,13 +178,13 @@ RUN apk add --no-cache --virtual .build-deps \
         perl-dev \
         readline-dev \
         zlib-dev \
-		bzip2 \ 
-		coreutils \ 
-		gnutls \ 
-		nasm \ 
-		tar \ 
-		x264 \
-		curl \
+	bzip2 \ 
+	coreutils \ 
+	gnutls \ 
+	nasm \ 
+	tar \ 
+	x264 \
+	curl \
     && apk add --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/ --allow-untrusted \
         fdk-aac-dev \
     && apk add --no-cache \
