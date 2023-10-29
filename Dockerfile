@@ -198,9 +198,9 @@ RUN cd /tmp/luarocks-${RESTY_LUAROCKS_VERSION} \
         --lua-suffix=jit-2.1.0-beta3 \
         --with-lua-include=/usr/local/openresty/luajit/include/luajit-2.1 \
     && make build \
-    && make install \
-    && cd /tmp/ffmpeg* 
-RUN PATH="/usr/bin:$PATH" \
+    && make install 
+RUN cd /tmp/ffmpeg* \
+          && PATH="/usr/bin:$PATH" \
 	  && ./configure --bindir="/usr/bin" ${FFMPEG_CONFIG_OPTIONS} \
 	  && make -j$(getconf _NPROCESSORS_ONLN) \
 	  && make install \
