@@ -64,12 +64,10 @@ LABEL maintainer="Shivajee.R.Sharma shivajee.sharma<at>gmail.com"
 ENV HLS_DIR "/data/hls"
 
 # Prepare data directory
-RUN mkdir -p /data
-RUN mkdir -p /data/hls
-RUN mkdir -p /data/dash
-
-# Prepare www directory
-RUN mkdir -p /www
+RUN mkdir -p /data \
+    && mkdir -p /data/hls \
+    && mkdir -p /data/dash \
+    && mkdir -p /www
 
 # Add additional binaries into PATH for convenience
 ENV PATH=$PATH:/usr/local/openresty/luajit/bin:/usr/local/openresty/nginx/sbin:/usr/local/openresty/bin
@@ -115,6 +113,7 @@ ARG RESTY_CONFIG_OPTIONS="\
     --with-stream_ssl_module \
     --with-threads \
     "
+    
 # These are not intended to be user-specified
 ARG _RESTY_CONFIG_DEPS="--with-openssl=/tmp/openssl-${RESTY_OPENSSL_VERSION} --add-module=/tmp/nginx-rtmp-module-${NGINX_RTMP_VERSION} --with-pcre=/tmp/pcre-${RESTY_PCRE_VERSION}"
 
@@ -170,42 +169,36 @@ RUN apk add --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/test
 RUN apk add --no-cache gd geoip libgcc supervisor perl libxslt zlib bash freetype-dev gnutls-dev lame-dev libass-dev libogg-dev libtheora-dev libvorbis-dev libvpx-dev libwebp-dev libssh2 opus-dev rtmpdump-dev x264-dev x265-dev yasm-dev v4l-utils-dev xvidcore-dev gst-vaapi libva-dev gettext-dev 
 RUN cd /tmp \
     && curl -fSL https://www.openssl.org/source/openssl-${RESTY_OPENSSL_VERSION}.tar.gz -o openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
-    && tar xzf openssl-${RESTY_OPENSSL_VERSION}.tar.gz 
-RUN cd /tmp \
+    && tar xzf openssl-${RESTY_OPENSSL_VERSION}.tar.gz \    
     && curl -fSL https://luarocks.org/releases/luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz -o luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
-    && tar xzf luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz 
-RUN cd /tmp \
+    && tar xzf luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
     && curl -fSL https://github.com/arut/nginx-rtmp-module/archive/v$NGINX_RTMP_VERSION.tar.gz -o nginx-rtmp-module.tar.gz \
-    && tar xzf nginx-rtmp-module.tar.gz 
-RUN cd /tmp \
+    && tar xzf nginx-rtmp-module.tar.gz \
     && curl -fSL https://sourceforge.net/projects/pcre/files/pcre/${RESTY_PCRE_VERSION}/pcre-${RESTY_PCRE_VERSION}.tar.gz -o pcre-${RESTY_PCRE_VERSION}.tar.gz \
-    && tar xzf pcre-${RESTY_PCRE_VERSION}.tar.gz 
-RUN cd /tmp \
+    && tar xzf pcre-${RESTY_PCRE_VERSION}.tar.gz \
     && curl -sL https://www.ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.gz -o ffmpeg.tar.gz \
-    && tar xzf ffmpeg.tar.gz 
-RUN cd /tmp \
+    && tar xzf ffmpeg.tar.gz \
     && curl -fSL https://openresty.org/download/openresty-${RESTY_VERSION}.tar.gz -o openresty-${RESTY_VERSION}.tar.gz \
-    && tar xzf openresty-${RESTY_VERSION}.tar.gz 
-RUN cd /tmp/openresty-${RESTY_VERSION} \
+    && tar xzf openresty-${RESTY_VERSION}.tar.gz \
+    && cd /tmp/openresty-${RESTY_VERSION} \
     && ./configure -j${RESTY_J} ${_RESTY_CONFIG_DEPS} ${RESTY_CONFIG_OPTIONS} ${RESTY_CONFIG_OPTIONS_MORE} \
     && make -j${RESTY_J} \
-    && make -j${RESTY_J} install \
-    && cd /tmp 
-RUN cd /tmp/luarocks-${RESTY_LUAROCKS_VERSION} \
+    && make -j${RESTY_J} install \    
+    && cd /tmp/luarocks-${RESTY_LUAROCKS_VERSION} \
     && ./configure \
         --prefix=/usr/local/openresty/luajit \
         --with-lua=/usr/local/openresty/luajit \
         --lua-suffix=jit-2.1.0-beta3 \
         --with-lua-include=/usr/local/openresty/luajit/include/luajit-2.1 \
     && make build \
-    && make install 
-RUN cd /tmp/ffmpeg* \
+    && make install \
+    && cd /tmp/ffmpeg* \
           && PATH="/usr/bin:$PATH" \
 	  && ./configure --bindir="/usr/bin" ${FFMPEG_CONFIG_OPTIONS} \
 	  && make -j$(getconf _NPROCESSORS_ONLN) \
 	  && make install \
-	  && make distclean 
-RUN cd /tmp \
+	  && make distclean \
+    && cd /tmp \
     && rm -rf \
         openssl-${RESTY_OPENSSL_VERSION} \
         openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
@@ -214,17 +207,17 @@ RUN cd /tmp \
         nginx-rtmp-module.tar.gz \
         ffmpeg-${FFMPEG_VERSION} ffmpeg.tar.gz \
         openresty-${RESTY_VERSION}.tar.gz openresty-${RESTY_VERSION} \
-        pcre-${RESTY_PCRE_VERSION}.tar.gz pcre-${RESTY_PCRE_VERSION} 
-RUN apk add --no-cache --virtual .gettext gettext 
-RUN mv /usr/bin/envsubst /tmp/ \
+        pcre-${RESTY_PCRE_VERSION}.tar.gz pcre-${RESTY_PCRE_VERSION} \
+    && apk add --no-cache --virtual .gettext gettext \
+    && mv /usr/bin/envsubst /tmp/ \
     && runDeps="$( \
         scanelf --needed --nobanner /tmp/envsubst \
             | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
             | sort -u \
             | xargs -r apk info --installed \
             | sort -u \
-    )" 
-RUN apk del .build-deps .gettext \
+    )" \ 
+    && apk del .build-deps .gettext \
     && mv /tmp/envsubst /usr/local/bin \
     && ln -sf /dev/stdout /usr/local/openresty/nginx/logs/access.log \
     && ln -sf /dev/stderr /usr/local/openresty/nginx/logs/error.log 
