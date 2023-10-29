@@ -239,14 +239,14 @@ STOPSIGNAL SIGTERM
 COPY --from=builder /work/go-rtmp-api /
 
 # setup cron; see clean-hls-dir.sh for more information
-COPY clean-hls-dir.sh /clean-hls-dir.sh
-RUN chmod +x /clean-hls-dir.sh
+# COPY clean-hls-dir.sh /clean-hls-dir.sh
+# RUN chmod +x /clean-hls-dir.sh
 
-COPY etc/cron.d/clean-hls-dir /etc/cron.d/clean-hls-dir
+# COPY etc/cron.d/clean-hls-dir /etc/cron.d/clean-hls-dir
 # Give execution rights on the cron job
-RUN chmod 0644 /etc/cron.d/clean-hls-dir
+# RUN chmod 0644 /etc/cron.d/clean-hls-dir
 # Apply cron job
-RUN crontab /etc/cron.d/clean-hls-dir
+# RUN crontab /etc/cron.d/clean-hls-dir
 
 COPY etc/supervisor/conf.d/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
