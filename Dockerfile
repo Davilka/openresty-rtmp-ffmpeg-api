@@ -27,7 +27,7 @@
 ################
 
 # Builder image
-FROM golang:1.21.3-alpine3.18 as builder
+FROM golang:1.24.1-alpine3.21 AS builder
 WORKDIR /work
 
 # enable gin gonic relase mode
@@ -47,6 +47,8 @@ RUN \
   && go get gopkg.in/go-playground/validator.v8 \
   && go get gopkg.in/yaml.v2 \
   && go get github.com/mattn/go-isatty
+# update all modules
+#RUN go get -u
 
 # compile app static
 RUN \
@@ -55,13 +57,12 @@ RUN \
   GOARCH=amd64 \
   go build -a -installsuffix cgo -ldflags="-w -s" -o go-rtmp-api .
 
-# Main image
 FROM openresty/openresty:alpine
-LABEL maintainer="Shivajee.R.Sharma shivajee.sharma<at>gmail.com"
+LABEL maintainer="Davilka: davilka1@gmail.com"
 
 #######################
 # Environment variables
-ENV HLS_DIR "/data/hls"
+ENV HLS_DIR="/tmp/hls"
 
 # Prepare data directory
 RUN mkdir -p /data \
@@ -77,12 +78,12 @@ ENV PATH=$PATH:/usr/local/openresty/luajit/bin:/usr/local/openresty/nginx/sbin:/
 ARG BUILD_DATE
 ARG NGINX_RTMP_VERSION="1.2.2"
 
-ARG RESTY_VERSION="1.21.4.2"
-ARG RESTY_OPENSSL_VERSION="1.0.2p"
+ARG RESTY_VERSION="1.27.1.1"
+ARG RESTY_OPENSSL_VERSION="3.0.16"
 ARG RESTY_PCRE_VERSION="8.45"
-ARG RESTY_LUAROCKS_VERSION="3.9.2"
+ARG RESTY_LUAROCKS_VERSION="3.11.1"
 ARG RESTY_CONFIG_OPTIONS_MORE=""
-ARG RESTY_J="1"
+ARG RESTY_J=16
 ARG RESTY_CONFIG_OPTIONS="\
     --with-file-aio \
     --with-http_addition_module \
@@ -103,25 +104,23 @@ ARG RESTY_CONFIG_OPTIONS="\
     --with-http_sub_module \
     --with-http_v2_module \
     --with-http_xslt_module=dynamic \
-    --with-ipv6 \
     --with-mail \
     --with-mail_ssl_module \
-    --with-md5-asm \
     --with-pcre-jit \
-    --with-sha1-asm \
     --with-stream \
     --with-stream_ssl_module \
     --with-threads \
+    --with-debug \
     "
     
 # These are not intended to be user-specified
-ARG _RESTY_CONFIG_DEPS="--with-openssl=/tmp/openssl-${RESTY_OPENSSL_VERSION} --add-module=/tmp/nginx-rtmp-module-${NGINX_RTMP_VERSION} --with-pcre=/tmp/pcre-${RESTY_PCRE_VERSION}"
+ARG _RESTY_CONFIG_DEPS="--with-openssl=/tmp/openssl-${RESTY_OPENSSL_VERSION} --add-module=/tmp/nginx-rtmp-module-${NGINX_RTMP_VERSION} --with-pcre"
 
-ARG FFMPEG_VERSION="6.0"
+ARG FFMPEG_VERSION="7.1.1"
 ARG FFMPEG_CONFIG_OPTIONS="\
     --disable-debug \
-    --disable-doc \
-    --disable-ffplay \
+    --disable-doc \ 
+    --disable-ffplay \ 
     --enable-gnutls \
     --enable-gpl \
     --enable-libass \
@@ -188,7 +187,7 @@ RUN cd /tmp \
     && ./configure \
         --prefix=/usr/local/openresty/luajit \
         --with-lua=/usr/local/openresty/luajit \
-        --lua-suffix=jit-2.1.0-beta3 \
+#        --lua-suffix=jit-2.1.0-beta3 \
         --with-lua-include=/usr/local/openresty/luajit/include/luajit-2.1 \
     && make build \
     && make install \
@@ -205,13 +204,15 @@ RUN cd /tmp \
         luarocks-${RESTY_LUAROCKS_VERSION} luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
         nginx-rtmp-module-${NGINX_RTMP_VERSION} \
         nginx-rtmp-module.tar.gz \
-        ffmpeg-${FFMPEG_VERSION} ffmpeg.tar.gz \
-        openresty-${RESTY_VERSION}.tar.gz openresty-${RESTY_VERSION} \
-        pcre-${RESTY_PCRE_VERSION}.tar.gz pcre-${RESTY_PCRE_VERSION} \
-    && apk add --no-cache --virtual .gettext gettext \
-    && mv /usr/bin/envsubst /tmp/ \
-    && runDeps="$( \
-        scanelf --needed --nobanner /tmp/envsubst \
+        FFmpeg-n${FFMPEG_VERSION} ffmpeg.tar.gz \
+        openresty-${RESTY_VERSION}.tar.gz openresty-${RESTY_VERSION}
+#        pcre-${RESTY_PCRE_VERSION}.tar.gz pcre2-${RESTY_PCRE_VERSION}
+RUN cd /
+RUN apk update
+RUN apk upgrade
+RUN apk add --no-cache gettext
+RUN mv /usr/bin/envsubst /tmp/ ; \
+    runDeps="$( scanelf --needed --nobanner /tmp/envsubst \
             | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
             | sort -u \
             | xargs -r apk info --installed \
@@ -250,3 +251,4 @@ COPY --from=builder /work/go-rtmp-api /
 
 COPY etc/supervisor/conf.d/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+#CMD ["/usr/local/openresty/nginx/sbin/nginx", "-c", "/usr/local/openresty/nginx/conf/nginx.conf"]
