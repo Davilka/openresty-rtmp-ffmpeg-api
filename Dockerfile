@@ -48,7 +48,7 @@ RUN \
   && go get gopkg.in/yaml.v2 \
   && go get github.com/mattn/go-isatty
 # update all modules
-#RUN go get -u
+RUN go get -u
 
 # compile app static
 RUN \
@@ -163,9 +163,53 @@ LABEL org.label-schema.description="nginx-rtmp for streaming, including ffmpeg a
 # 4) Build LuaRocks
 # 5) Build ffmpeg
 # 6) Cleanup
-RUN apk add --no-cache --virtual .build-deps build-base curl gd-dev geoip-dev libxslt-dev linux-headers make perl-dev readline-dev zlib-dev bzip2 coreutils gnutls nasm tar x264 \
+RUN apk add --no-cache --virtual .build-deps \
+    build-base \
+    curl \
+    gd-dev \
+    geoip-dev \
+    libxslt-dev \
+    linux-headers \
+    make \
+    perl-dev \
+    readline-dev \
+    zlib-dev \
+    bzip2 \
+    coreutils \
+    gnutls \
+    nasm \
+    tar \
+    x264 \
     && apk add --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/ --allow-untrusted fdk-aac-dev \
-    && apk add --no-cache gd geoip libgcc supervisor perl libxslt zlib bash freetype-dev gnutls-dev lame-dev libass-dev libogg-dev libtheora-dev libvorbis-dev libvpx-dev libwebp-dev libssh2 opus-dev rtmpdump-dev x264-dev x265-dev yasm-dev v4l-utils-dev xvidcore-dev gst-vaapi libva-dev gettext-dev 
+    && apk add --no-cache gd \
+    geoip \
+    libgcc \
+    supervisor \
+    perl \
+    libxslt \
+    zlib \
+    bash \
+    freetype-dev \
+    gnutls-dev \
+    lame-dev \
+    libass-dev \
+    libogg-dev \
+    libtheora-dev \
+    libvorbis-dev \
+    libvpx-dev \
+    libwebp-dev \
+    libssh2 \
+    opus-dev \
+    rtmpdump-dev \
+    x264-dev \
+    x265-dev \
+    yasm-dev \
+    v4l-utils-dev \
+    xvidcore-dev \
+    gst-vaapi \
+    libva-dev \
+    gettext-dev \
+    pcre-dev
 RUN cd /tmp \
     && curl -fSL https://www.openssl.org/source/openssl-${RESTY_OPENSSL_VERSION}.tar.gz -o openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
     && tar xzf openssl-${RESTY_OPENSSL_VERSION}.tar.gz \    
@@ -182,16 +226,16 @@ RUN cd /tmp \
     && cd /tmp/openresty-${RESTY_VERSION} \
     && ./configure -j${RESTY_J} ${_RESTY_CONFIG_DEPS} ${RESTY_CONFIG_OPTIONS} ${RESTY_CONFIG_OPTIONS_MORE} \
     && make -j${RESTY_J} \
-    && make -j${RESTY_J} install \    
-    && cd /tmp/luarocks-${RESTY_LUAROCKS_VERSION} \
+    && make -j${RESTY_J} install 
+RUN cd /tmp/luarocks-${RESTY_LUAROCKS_VERSION} \
     && ./configure \
         --prefix=/usr/local/openresty/luajit \
         --with-lua=/usr/local/openresty/luajit \
 #        --lua-suffix=jit-2.1.0-beta3 \
         --with-lua-include=/usr/local/openresty/luajit/include/luajit-2.1 \
     && make build \
-    && make install \
-    && cd /tmp/ffmpeg* \
+    && make install
+RUN cd /tmp/ffmpeg* \
           && PATH="/usr/bin:$PATH" \
 	  && ./configure --bindir="/usr/bin" ${FFMPEG_CONFIG_OPTIONS} \
 	  && make -j$(getconf _NPROCESSORS_ONLN) \
@@ -205,8 +249,8 @@ RUN cd /tmp \
         nginx-rtmp-module-${NGINX_RTMP_VERSION} \
         nginx-rtmp-module.tar.gz \
         FFmpeg-n${FFMPEG_VERSION} ffmpeg.tar.gz \
-        openresty-${RESTY_VERSION}.tar.gz openresty-${RESTY_VERSION}
-#        pcre-${RESTY_PCRE_VERSION}.tar.gz pcre2-${RESTY_PCRE_VERSION}
+        openresty-${RESTY_VERSION}.tar.gz openresty-${RESTY_VERSION} \
+        pcre-${RESTY_PCRE_VERSION}.tar.gz pcre2-${RESTY_PCRE_VERSION}
 RUN cd /
 RUN apk update
 RUN apk upgrade
