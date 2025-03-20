@@ -57,17 +57,18 @@ RUN \
   GOARCH=amd64 \
   go build -a -installsuffix cgo -ldflags="-w -s" -o go-rtmp-api .
 
-FROM openresty/openresty:alpine
+#FROM openresty/openresty:alpine
+FROM nvidia/cuda:12.8.1-devel-ubuntu22.04 AS cuda-builder
 LABEL maintainer="Davilka: davilka1@gmail.com"
 
 #######################
 # Environment variables
-ENV HLS_DIR="/tmp/hls"
+ENV HLS_DIR="/tmp/data/hls"
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=all
 
 # Prepare data directory
-RUN mkdir -p /data \
-    && mkdir -p /data/hls \
-    && mkdir -p /data/dash \
+RUN mkdir -p /tmp/data/{hls,dash} \
     && mkdir -p /www
 
 # Add additional binaries into PATH for convenience
@@ -121,13 +122,15 @@ ARG FFMPEG_CONFIG_OPTIONS="\
     --disable-debug \
     --disable-doc \ 
     --disable-ffplay \ 
+    --enable-cuda-nvcc \
     --enable-gnutls \
     --enable-gpl \
     --enable-libass \
     --enable-libfreetype \
     --enable-libmp3lame \
+    --enable-libnpp \
     --enable-libopus \
-    --enable-librtmp \
+    #--enable-librtmp \
     --enable-libtheora \
     --enable-libfdk-aac \
     --enable-libvorbis \
@@ -141,13 +144,15 @@ ARG FFMPEG_CONFIG_OPTIONS="\
     --enable-version3 \
     --enable-avfilter \
     --enable-libxvid \
-    --enable-libv4l2 \
+    #--enable-libv4l2 \
     --enable-pic \
     --enable-shared \
     --enable-vaapi \
     --enable-pthreads \
     --disable-stripping \
     --disable-static \
+    --extra-cflags=-I/usr/local/cuda/include \
+    --extra-ldflags=-L/usr/local/cuda/lib64 \
     "
     
 LABEL org.label-schema.schema-version="1.0"
@@ -157,71 +162,72 @@ LABEL org.label-schema.description="nginx-rtmp for streaming, including ffmpeg a
 
 #####################################################
 # Build steps
-# 1) Install apk dependencies
+# 1) Install dependencies
 # 2) Download and untar OpenSSL, LuaRocks, ffmpeg, nginx-rtmp, PCRE, and OpenResty
 # 3) Build OpenResty with nginx-rtmp-module
 # 4) Build LuaRocks
 # 5) Build ffmpeg
 # 6) Cleanup
-RUN apk add --no-cache --virtual .build-deps \
-    build-base \
-    curl \
-    gd-dev \
-    geoip-dev \
-    libxslt-dev \
-    linux-headers \
-    make \
-    perl-dev \
-    readline-dev \
-    zlib-dev \
-    bzip2 \
-    coreutils \
-    gnutls \
-    nasm \
-    tar \
-    x264 \
-    && apk add --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/ --allow-untrusted fdk-aac-dev \
-    && apk add --no-cache gd \
-    geoip \
-    libgcc \
-    supervisor \
-    perl \
-    libxslt \
-    zlib \
+RUN apt-get update && apt-get full-upgrade -y \
+    && apt-get install  -y --no-install-recommends \
     bash \
-    freetype-dev \
-    gnutls-dev \
-    lame-dev \
+    build-essential \
+    cmake \
+    curl \
+    gettext-base \
+    git \
+    gstreamer1.0-vaapi \
+    libnvidia-encode-570-server \
     libass-dev \
+    libc6 \
+    libc6-dev \
+    libfdk-aac-dev \
+    libfreetype6-dev \
+    libgd-dev \
+    libgeoip-dev \
+    libgnutls28-dev \
+    libmp3lame-dev \
+    libnuma-dev \
+    libnuma1 \
     libogg-dev \
+    libopus-dev \
+    libpcre3-dev \
+    librtmp-dev \
+    libssh2-1-dev \
     libtheora-dev \
+    libtool \
+    libva-dev \
     libvorbis-dev \
     libvpx-dev \
     libwebp-dev \
-    libssh2 \
-    opus-dev \
-    rtmpdump-dev \
-    x264-dev \
-    x265-dev \
-    yasm-dev \
-    v4l-utils-dev \
-    xvidcore-dev \
-    gst-vaapi \
-    libva-dev \
-    gettext-dev \
-    pcre-dev
+    libx264-dev \
+    libx265-dev \
+    libxslt1-dev \
+    libxvidcore-dev \
+    perl \
+    supervisor \
+    unzip \
+    #v4l-utils \
+    wget \
+    nasm \
+    zlib1g-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 RUN cd /tmp \
     && curl -fSL https://www.openssl.org/source/openssl-${RESTY_OPENSSL_VERSION}.tar.gz -o openssl-${RESTY_OPENSSL_VERSION}.tar.gz \
     && tar xzf openssl-${RESTY_OPENSSL_VERSION}.tar.gz \    
-    && curl -fSL https://luarocks.org/releases/luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz -o luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
+    #&& curl -fSL https://luarocks.org/releases/luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz -o luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
+    && curl -fSL http://172.17.0.1:8081/luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz -o luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
     && tar xzf luarocks-${RESTY_LUAROCKS_VERSION}.tar.gz \
     && curl -fSL https://github.com/arut/nginx-rtmp-module/archive/v$NGINX_RTMP_VERSION.tar.gz -o nginx-rtmp-module.tar.gz \
     && tar xzf nginx-rtmp-module.tar.gz \
     && curl -fSL https://sourceforge.net/projects/pcre/files/pcre/${RESTY_PCRE_VERSION}/pcre-${RESTY_PCRE_VERSION}.tar.gz -o pcre-${RESTY_PCRE_VERSION}.tar.gz \
     && tar xzf pcre-${RESTY_PCRE_VERSION}.tar.gz \
-    && curl -sL https://www.ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.gz -o ffmpeg.tar.gz \
-    && tar xzf ffmpeg.tar.gz \
-    && curl -fSL https://openresty.org/download/openresty-${RESTY_VERSION}.tar.gz -o openresty-${RESTY_VERSION}.tar.gz \
+    #&& curl -sL https://www.ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.gz -o ffmpeg.tar.gz \
+    #&& curl -sL http://172.17.0.1:8081/ffmpeg-${FFMPEG_VERSION}.tar.gz -o ffmpeg.tar.gz \
+    #&& tar xzf ffmpeg.tar.gz \
+    && git clone https://github.com/FFmpeg/FFmpeg.git ffmpeg \
+    && curl -fSL http://172.17.0.1:8081/openresty-${RESTY_VERSION}.tar.gz -o openresty-${RESTY_VERSION}.tar.gz \
     && tar xzf openresty-${RESTY_VERSION}.tar.gz \
     && cd /tmp/openresty-${RESTY_VERSION} \
     && ./configure -j${RESTY_J} ${_RESTY_CONFIG_DEPS} ${RESTY_CONFIG_OPTIONS} ${RESTY_CONFIG_OPTIONS_MORE} \
@@ -235,9 +241,14 @@ RUN cd /tmp/luarocks-${RESTY_LUAROCKS_VERSION} \
         --with-lua-include=/usr/local/openresty/luajit/include/luajit-2.1 \
     && make build \
     && make install
-RUN cd /tmp/ffmpeg* \
+# Clone and install ffnvcodec
+RUN cd /tmp \
+    && git clone https://git.videolan.org/git/ffmpeg/nv-codec-headers.git \
+    && cd nv-codec-headers \
+    && make install
+RUN cd /tmp/ffmpeg \
           && PATH="/usr/bin:$PATH" \
-	  && ./configure --bindir="/usr/bin" ${FFMPEG_CONFIG_OPTIONS} \
+	  && ./configure --prefix=/usr --bindir="/usr/bin" ${FFMPEG_CONFIG_OPTIONS} \
 	  && make -j$(getconf _NPROCESSORS_ONLN) \
 	  && make install \
 	  && make distclean \
@@ -250,22 +261,11 @@ RUN cd /tmp/ffmpeg* \
         nginx-rtmp-module.tar.gz \
         FFmpeg-n${FFMPEG_VERSION} ffmpeg.tar.gz \
         openresty-${RESTY_VERSION}.tar.gz openresty-${RESTY_VERSION} \
-        pcre-${RESTY_PCRE_VERSION}.tar.gz pcre2-${RESTY_PCRE_VERSION}
-RUN cd /
-RUN apk update
-RUN apk upgrade
-RUN apk add --no-cache gettext
-RUN mv /usr/bin/envsubst /tmp/ ; \
-    runDeps="$( scanelf --needed --nobanner /tmp/envsubst \
-            | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
-            | sort -u \
-            | xargs -r apk info --installed \
-            | sort -u \
-    )" \ 
-    && apk del .build-deps .gettext \
-    && mv /tmp/envsubst /usr/local/bin \
-    && ln -sf /dev/stdout /usr/local/openresty/nginx/logs/access.log \
-    && ln -sf /dev/stderr /usr/local/openresty/nginx/logs/error.log 
+        pcre-${RESTY_PCRE_VERSION}.tar.gz pcre2-${RESTY_PCRE_VERSION} \
+	nv-codec-headers
+#RUN cd /
+#    && ln -sf /dev/stdout /usr/local/openresty/nginx/logs/access.log \
+#    && ln -sf /dev/stderr /usr/local/openresty/nginx/logs/error.log 
 # Add LuaRocks paths
 # If OpenResty changes, these may need updating:
 #    /usr/local/openresty/bin/resty -e 'print(package.path)'
@@ -274,10 +274,11 @@ ENV LUA_PATH="/usr/local/openresty/site/lualib/?.ljbc;/usr/local/openresty/site/
 ENV LUA_CPATH="/usr/local/openresty/site/lualib/?.so;/usr/local/openresty/lualib/?.so;./?.so;/usr/local/lib/lua/5.1/?.so;/usr/local/openresty/luajit/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/loadall.so;/usr/local/openresty/luajit/lib/lua/5.1/?.so"
 
 # Copy nginx configuration files and sample page
-COPY etc/nginx/nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
-COPY html /usr/local/nginx/html
+ADD etc/nginx/nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
+ADD html /www/html
+ADD static /www/static
 
-EXPOSE 80 443 1935
+EXPOSE 8080 1935
 STOPSIGNAL SIGTERM
 
 # Copy api and config
@@ -293,6 +294,7 @@ COPY --from=builder /work/go-rtmp-api /
 # Apply cron job
 # RUN crontab /etc/cron.d/clean-hls-dir
 
-COPY etc/supervisor/conf.d/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+ADD etc/supervisor/conf.d/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
-#CMD ["/usr/local/openresty/nginx/sbin/nginx", "-c", "/usr/local/openresty/nginx/conf/nginx.conf"]
+#CMD ["/usr/local/openresty/nginx/sbin/nginx", "-c", "/etc/nginx/nginx.conf"]
+
